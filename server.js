@@ -37,6 +37,8 @@ function handleweather(request,response){
         datetime = current.datetime;
         
     });
+    response.send(weatherResponse);
+
     }
 
     app.listen(PORT, ()=> console.log(`App is running on Server on port: ${PORT}`));
