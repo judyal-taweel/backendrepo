@@ -1,9 +1,10 @@
 'use strict';
-
-const PORT = 3000;
+require("dotenv").config();
+const PORT = process.env.PORT;
 
 const express =require('express');
 const cors = require('cors');
+
 
 const app = express();
 app.use(cors());
@@ -12,33 +13,44 @@ app.get('/location',handlelocation);
 app.get('/weather',handleweather);
 
 function handlelocation(request,response){
-    const getLocation = require('./data/location.json');
     const city = request.query.city;
-    let obj = {
-        name: getLocation[0].display_name,
-        search_query: city,
-        formatted_query : city,
-        latitude : getLocation[0].lat,
-        longitude : getLocation[0].lon
-    };
-    response.send(obj);
+    const getLocation = require('./data/location.json');
+    const newlocation = new Location(getLocation[0])
+    response.send(newlocation);
 }
 
 
+function Location(data) {
+    this.formatted_query = data.display_name;
+    this.latitude = data.lat;
+    this.longitude = data.lon;
+}
+function Weather(data) {
+    this.forecast = data.Weather.description;
+    this.datetime = data.datetime;
+}
+
 function handleweather(request,response){
     const data = require('./data/weather.json');
-    const weathers = data.weather;
+
     const weatherResponse = [];
-    weathers.forEach(item => {
-        const current = item.weather;
+    data.data.forEach(item => {
         weatherResponse.push({
-            weather = current.description,    
-        })
-        datetime = current.datetime;
-        
+            forecast:item.weather.description,
+            datetime:item.datetime
+            
+        }
+        )
+        console.log(weatherResponse);
     });
     response.send(weatherResponse);
 
     }
 
     app.listen(PORT, ()=> console.log(`App is running on Server on port: ${PORT}`));
+
+    app.use('*', (request, response) => {
+        let status =404;
+        response.status(status).send({status:status , msg:'Not found'});
+      });
+      
