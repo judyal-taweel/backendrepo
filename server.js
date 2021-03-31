@@ -24,6 +24,9 @@ function handlelocation(request, response) {
   const search_query = request.query.city;
 
   const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${search_query}&format=json`;
+  if(!search_query){
+    res.status(500).send("sorry, some thing went wrong");
+  }
   superagent.get(url).then(res => {
     
     const location = new Location(search_query, res.body[0]);
@@ -62,16 +65,21 @@ function handleweather(request, response) {
 
   function handleparks(request,response){
     const q = request.query.search_query;
-    const url = `https://developer.nps.gov/api/v1/alerts?q=${q}&API_KEY=${PARKS_API_KEY}`;
+    const url = `https://developer.nps.gov/api/v1/parks?city=${q}&api_key=${PARKS_API_KEY}&limit=10`;
     superagent.get(url).then(data => {
-      response.send(data);
-      // let parkArr = data.body
-    });
+      const parkData = data.body.data.map(park => {
+        return new Parks(park);
+      });
+      response.send(parkData);   
+     });
    
   }
 
-  function Parks(){
-    
+  function Parks(data){
+    this.search_query = data.search_query;
+    this.address = `${data.addresses[0].line1} ${data.addresses[0].city} ${data.addresses[0].stateCode} ${data.addresses[0].postalCode}`;
+    this.fees ="0.00";
+    this.park_url = data.url;
   }
 
 app.listen(PORT, () => console.log(`App is running on Server on port: ${PORT}`));
