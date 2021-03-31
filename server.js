@@ -64,14 +64,19 @@ function handleweather(request, response) {
     const q = request.query.search_query;
     const url = `https://developer.nps.gov/api/v1/alerts?q=${q}&API_KEY=${PARKS_API_KEY}`;
     superagent.get(url).then(data => {
-      response.send(data);
-      // let parkArr = data.body
-    });
+      const parkData = data.body.data.map(park => {
+        return new Parks(park);
+      });
+      response.send(parkData);   
+     });
    
   }
 
   function Parks(){
-    
+    this.name = data.name;
+    this.address = `${data.addresses[0].line1} ${data.addresses[0].city} ${data.addresses[0].stateCode} ${data.addresses[0].postalCode}`;
+    this.fees ="0.00";
+    this.park_url = data.url;
   }
 
 app.listen(PORT, () => console.log(`App is running on Server on port: ${PORT}`));
