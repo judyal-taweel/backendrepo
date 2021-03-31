@@ -1,14 +1,17 @@
 'use strict';
 require("dotenv").config();
 const superagent = require('superagent');
+const pg = require('pg');
 
 const PORT = process.env.PORT;
 const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const WEATHERS_API_KEY = process.env.WEATHERS_API_KEY;
 const PARKS_API_KEY = process.env.PARKS_API_KEY;
 
+
 const express = require('express');
 const cors = require('cors');
+const { query } = require("express");
 
 
 const app = express();
@@ -18,22 +21,43 @@ app.get('/location', handlelocation);
 app.get('/weather', handleweather);
 app.get('/parks', handleparks);
 
+const client = new pg.Client(process.env.DATABASE_URL);
+
+// let citiesData = {};
+// client.query('select * from locations').then(data => {
+//     data.rows.forEach(elem => {
+//         citiesData[elem.query] = elem;
+//     });
+// });
+
 
 
 function handlelocation(request, response) {
+  let sql = 'SELECT * FROM location';
+  client.query(sql).then(result=>{
+    console.log(result.rows);
+  })
   const search_query = request.query.city;
-
   const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${search_query}&format=json`;
-  superagent.get(url).then(res => {
-    
-    const location = new Location(search_query, res.body[0]);
+  Request.get(url).then(data =>{
+    const newlocation = data.body.map(location=>{
+      return{
+        search_query: search_query,
+        formatted_query: location.display_name,
+        latitude: location.lat,
+        longitude: location.lon
 
-    response.send(location);
+      }
+    });
+    let SQL = 'INSERT INTO location (search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4) RETURNING *';
+    let values = [search_query, newlocation[0].formatted_query, newlocation[0].latitude, newlocation[0].longitude];
+    client.query(SQL, values).then(result => {
+      console.log(result.rows);
+    });
+    response.send(newlocation[0]);
+  })
 
 
-
-  }
-  )
 }
 
 
