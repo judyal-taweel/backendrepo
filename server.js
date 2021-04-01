@@ -23,23 +23,23 @@ app.get('/parks', handleparks);
 
 const client = new pg.Client(process.env.DATABASE_URL);
 
-// let citiesData = {};
-// client.query('select * from locations').then(data => {
-//     data.rows.forEach(elem => {
-//         citiesData[elem.query] = elem;
-//     });
-// });
+let citiesData = {};
+client.query('select * from locations').then(data => {
+    data.rows.forEach(elem => {
+        citiesData[elem.query] = elem;
+    });
+});
 
 
 
 function handlelocation(request, response) {
-  let sql = 'SELECT * FROM location';
+  const search_query = request.query.city;
+  let sql = `SELECT * FROM locations WHERE search_query=${search_query}`;
   client.query(sql).then(result=>{
     console.log(result.rows);
   })
-  const search_query = request.query.city;
   const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${search_query}&format=json`;
-  Request.get(url).then(data =>{
+  superagent.get(url).then(data =>{
     const newlocation = data.body.map(location=>{
       return{
         search_query: search_query,
@@ -52,7 +52,6 @@ function handlelocation(request, response) {
     let SQL = 'INSERT INTO location (search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4) RETURNING *';
     let values = [search_query, newlocation[0].formatted_query, newlocation[0].latitude, newlocation[0].longitude];
     client.query(SQL, values).then(result => {
-      console.log(result.rows);
     });
     response.send(newlocation[0]);
   })
@@ -86,7 +85,7 @@ function handleweather(request, response) {
 
   function handleparks(request,response){
     const q = request.query.search_query;
-    const url = `https://developer.nps.gov/api/v1/alerts?q=${q}&API_KEY=${PARKS_API_KEY}`;
+    const url = `https://developer.nps.gov/api/v1/parks?city=${q}&api_key=${PARKS_API_KEY}&limit=10`;
     superagent.get(url).then(data => {
       const parkData = data.body.data.map(park => {
         return new Parks(park);
@@ -96,14 +95,18 @@ function handleweather(request, response) {
    
   }
 
-  function Parks(){
+  function Parks(data){
     this.name = data.name;
     this.address = `${data.addresses[0].line1} ${data.addresses[0].city} ${data.addresses[0].stateCode} ${data.addresses[0].postalCode}`;
     this.fees ="0.00";
     this.park_url = data.url;
   }
 
-app.listen(PORT, () => console.log(`App is running on Server on port: ${PORT}`));
+  client.connect().then(()=>{
+
+    app.listen(PORT, () => console.log(`App is running on Server on port: ${PORT}`));
+  })
+
 
 
 app.use('*', notFoundHandler); // 404 not found url
