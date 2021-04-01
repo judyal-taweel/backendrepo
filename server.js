@@ -1,14 +1,17 @@
 'use strict';
 require("dotenv").config();
 const superagent = require('superagent');
+const pg = require('pg');
 
 const PORT = process.env.PORT;
 const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const WEATHERS_API_KEY = process.env.WEATHERS_API_KEY;
 const PARKS_API_KEY = process.env.PARKS_API_KEY;
 
+
 const express = require('express');
 const cors = require('cors');
+const { query } = require("express");
 
 
 const app = express();
@@ -18,25 +21,43 @@ app.get('/location', handlelocation);
 app.get('/weather', handleweather);
 app.get('/parks', handleparks);
 
+const client = new pg.Client(process.env.DATABASE_URL);
+
+let citiesData = {};
+client.query('select * from locations').then(data => {
+    data.rows.forEach(elem => {
+        citiesData[elem.query] = elem;
+    });
+});
+
 
 
 function handlelocation(request, response) {
   const search_query = request.query.city;
-
+  let sql = `SELECT * FROM locations WHERE search_query=${search_query}`;
+  client.query(sql).then(result=>{
+    console.log(result.rows);
+  })
   const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${search_query}&format=json`;
-  if(!search_query){
-    res.status(500).send("sorry, some thing went wrong");
-  }
-  superagent.get(url).then(res => {
-    
-    const location = new Location(search_query, res.body[0]);
+  superagent.get(url).then(data =>{
+    const newlocation = data.body.map(location=>{
+      return{
+        search_query: search_query,
+        formatted_query: location.display_name,
+        latitude: location.lat,
+        longitude: location.lon
 
-    response.send(location);
+      }
+    });
+    let SQL = 'INSERT INTO location (search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4) RETURNING *';
+    let values = [search_query, newlocation[0].formatted_query, newlocation[0].latitude, newlocation[0].longitude];
+    client.query(SQL, values).then(result => {
+    });
+    response.send(newlocation[0]);
+  })
 
 
 
-  }
-  )
 }
 
 
@@ -76,13 +97,18 @@ function handleweather(request, response) {
   }
 
   function Parks(data){
-    this.search_query = data.search_query;
+    this.name = data.name;
+
     this.address = `${data.addresses[0].line1} ${data.addresses[0].city} ${data.addresses[0].stateCode} ${data.addresses[0].postalCode}`;
     this.fees ="0.00";
     this.park_url = data.url;
   }
 
-app.listen(PORT, () => console.log(`App is running on Server on port: ${PORT}`));
+  client.connect().then(()=>{
+
+    app.listen(PORT, () => console.log(`App is running on Server on port: ${PORT}`));
+  })
+
 
 
 app.use('*', notFoundHandler); // 404 not found url
