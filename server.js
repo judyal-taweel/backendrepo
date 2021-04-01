@@ -17,6 +17,8 @@ const { query } = require("express");
 const app = express();
 app.use(cors());
 
+
+
 app.get('/location', handlelocation);
 app.get('/weather', handleweather);
 app.get('/parks', handleparks);
@@ -55,7 +57,6 @@ function handlelocation(request, response) {
     });
     response.send(newlocation[0]);
   })
-
 
 
 }
@@ -98,7 +99,6 @@ function handleweather(request, response) {
 
   function Parks(data){
     this.name = data.name;
-
     this.address = `${data.addresses[0].line1} ${data.addresses[0].city} ${data.addresses[0].stateCode} ${data.addresses[0].postalCode}`;
     this.fees ="0.00";
     this.park_url = data.url;
@@ -122,4 +122,3 @@ function notFoundHandler(request, response) {
 function errorHandler(err, request, response, next) {
   response.status(500).send('something is wrong in server');
 }
-
