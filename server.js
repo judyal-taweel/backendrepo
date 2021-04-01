@@ -25,12 +25,6 @@ app.get('/parks', handleparks);
 
 const client = new pg.Client(process.env.DATABASE_URL);
 
-let citiesData = {};
-client.query('select * from locations').then(data => {
-    data.rows.forEach(elem => {
-        citiesData[elem.query] = elem;
-    });
-});
 
 
 
