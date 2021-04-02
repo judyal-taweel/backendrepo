@@ -18,6 +18,8 @@ const { query } = require("express");
 const app = express();
 app.use(cors());
 
+
+
 app.get('/location', handlelocation);
 app.get('/weather', handleweather);
 app.get('/parks', handleparks);
@@ -168,4 +170,3 @@ function notFoundHandler(request, response) {
 function errorHandler(err, request, response, next) {
   response.status(500).send('something is wrong in server');
 }
-
