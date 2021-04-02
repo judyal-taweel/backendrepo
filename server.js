@@ -54,7 +54,11 @@ function handlelocation(request, response) {
     client.query(SQL, values).then(result => {
     });
     response.send(newlocation[0]);
-  })
+
+  }).catch(error => {
+        console.log(error);
+        response.status(500).send('Sometheng wrong with API')
+      });    
 
 
 }
@@ -79,7 +83,11 @@ function handleweather(request, response) {
       return new Weather(element);
    })
    response.send(newArr);
-  });
+
+  }).catch(error => {
+    console.log(error);
+    response.status(500).send('Sometheng wrong with API')
+  });    
   }
 
 
@@ -90,8 +98,12 @@ function handleweather(request, response) {
       const parkData = data.body.data.map(park => {
         return new Parks(park);
       });
-      response.send(parkData);   
-     });
+      response.send(parkData); 
+
+     }).catch(error => {
+      console.log(error);
+      response.status(500).send('Sometheng wrong with API')
+    });    
    
   }
 
@@ -123,7 +135,10 @@ function handleweather(request, response) {
         movieArr.push( new Movies(item))
       })
         response.send(movieArr);  
-      });        
+      }).catch(error => {
+        console.log(error);
+        response.status(500).send('Sometheng wrong with API')
+      });          
   }
 
   function Yelp(data){
@@ -147,7 +162,10 @@ function handleweather(request, response) {
         response.send(yelpArr);  
         console.log(yelpArr);
         
-      });        
+      }).catch(error => {
+        console.log(error);
+        response.status(500).send('Sometheng wrong with API')
+      });       
   }
 
 
