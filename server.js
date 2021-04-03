@@ -34,6 +34,7 @@ const client = new pg.Client(process.env.DATABASE_URL);
 
 function handlelocation(request, response) {
   const search_query = request.query.city;
+  // let city = [search_query];
   let sql = `SELECT * FROM locations WHERE search_query=${search_query}`;
   client.query(sql).then(result=>{
     console.log(result.rows);
@@ -49,9 +50,10 @@ function handlelocation(request, response) {
 
       }
     });
-    let SQL = 'INSERT INTO location (search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4) RETURNING *';
+    let SQL = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4) RETURNING *';
     let values = [search_query, newlocation[0].formatted_query, newlocation[0].latitude, newlocation[0].longitude];
     client.query(SQL, values).then(result => {
+      response.send(result);
     });
     response.send(newlocation[0]);
 
