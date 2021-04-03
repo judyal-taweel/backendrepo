@@ -23,37 +23,69 @@ app.get('/location', handlelocation);
 app.get('/weather', handleweather);
 app.get('/parks', handleparks);
 
-const client = new pg.Client(process.env.DATABASE_URL);
+
+const ENV = process.env.ENV || 'DEB';
+
+
+// const client = new pg.Client(process.env.DATABASE_URL);
+let client ='';
+if(ENV==='DIV'){
+  client = new pg.Client({connectionString: DATABASE_URL})
+}else{client = new pg.Client({
+    connectionString: DATABASE_URL,
+    ssl: {rejectUnauthorized: false}
+    })}
 
 
 
 
 function handlelocation(request, response) {
   const search_query = request.query.city;
-  let sql = `SELECT * FROM locations WHERE search_query=${search_query}`;
-  client.query(sql).then(result=>{
-    console.log(result.rows);
-  })
+  const city = [search_query];
+  let sql = `SELECT * FROM locations WHERE search_query=$1`;
   const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${search_query}&format=json`;
-  superagent.get(url).then(data =>{
-    const newlocation = data.body.map(location=>{
-      return{
-        search_query: search_query,
-        formatted_query: location.display_name,
-        latitude: location.lat,
-        longitude: location.lon
 
+  if(!search_query){
+    response.status(500).send('something is wrong in server');}
+     
+    client.query(sql,city).then(item=>{
+      if(item.rows.length>0){
+        response.send(item.rows[0])
+      
+      }else{
+        superagent.get(url).then(data =>{
+          const newlocation = new Location(search_query,data.body[0]);
+
+          // const newlocation = data.body.map(location=>{
+            // return{
+            //   search_query: search_query,
+            //   formatted_query: location.display_name,
+            //   latitude: location.lat,
+            //   longitude: location.lon
+      
+            // }
+            
+          // });
+          let SQL = 'INSERT INTO location (search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4) RETURNING *';
+          let values = [search_query, newlocation[0].formatted_query, newlocation[0].latitude, newlocation[0].longitude];
+          client.query(SQL, values).then(result => {
+            console.log(result.rows);
+          
+          });
+        
+          response.send(newlocation[0]);
+        
+        }).catch(() => {
+          res.status(404).send("your search not found");
+        });
       }
-    });
-    let SQL = 'INSERT INTO location (search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4) RETURNING *';
-    let values = [search_query, newlocation[0].formatted_query, newlocation[0].latitude, newlocation[0].longitude];
-    client.query(SQL, values).then(result => {
-    });
-    response.send(newlocation[0]);
-  })
+      })
+    }
+    
 
 
-}
+  
+  
 
 
 function Location(search_query, data) {
