@@ -17,8 +17,6 @@ const { query } = require("express");
 const app = express();
 app.use(cors());
 
-
-
 app.get('/location', handlelocation);
 app.get('/weather', handleweather);
 app.get('/parks', handleparks);
@@ -79,6 +77,13 @@ function handlelocation(request, response) {
           res.status(404).send("your search not found");
         });
       }
+    });
+    let SQL = 'INSERT INTO location (search_query, formatted_query, latitude, longitude) VALUES($1, $2, $3, $4) RETURNING *';
+    let values = [search_query, newlocation[0].formatted_query, newlocation[0].latitude, newlocation[0].longitude];
+    client.query(SQL, values).then(result => {
+    });
+    response.send(newlocation[0]);
+  })
       })
     }
     
@@ -129,6 +134,57 @@ function handleweather(request, response) {
     this.fees ="0.00";
     this.park_url = data.url;
   }
+  function Movies(data){
+    this.title = data.title;
+    this.overview = data.overview;
+    this.average_votes = data.vote_average;
+    this.total_votes = data.vote_count;
+    this.image_url= `https://image.tmdb.org/t/p/w500${data.poster_path}`;
+    this.popularity= data.popularity;
+    this.released_on= data.released_on;
+    
+  }
+
+  function handlemovies(request,response){
+    let movieArr= [];
+
+    const q = request.query.search_query;
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=${MOVIES_API_KEY}&query=${q}`;
+    superagent.get(url).then(data => {
+      const movData = data.body.results;
+      movData.slice(0, 20).forEach(item=>{
+        movieArr.push( new Movies(item))
+      })
+        response.send(movieArr);  
+      });        
+  }
+
+  function Yelp(data){
+    this.name = data.name;
+    this.image_url = data.image_url;
+    this.price = data.price;
+    this.rating = data.rating;
+    this.url = data.url;  
+  }
+
+  function handleyelp(request,response){
+    let yelpArr= [];
+
+    const q = request.query.search_query;
+    const url = `https://api.yelp.com/v3/businesses/search?location=${q}&limit=50`;
+    superagent.get(url).set('Authorization', `Bearer ${YELP_API_KEY}`).then(data => {
+      const resData = data.body.businesses;
+      resData.forEach(item=>{
+        yelpArr.push( new Yelp(item))
+      })
+        response.send(yelpArr);  
+        console.log(yelpArr);
+        
+      });        
+  }
+
+
+
 
   client.connect().then(()=>{
 
